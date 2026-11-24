@@ -1,0 +1,5 @@
+group,n,share,sign_agreement
+all price-move headlines,122,1.0,0.7622950819672131
+with a listed session qualifier,53,0.4344262295081967,0.7358490566037735
+without a listed session qualifier,69,0.5655737704918032,0.782608695652174
+without a listed qualifier but containing 'session' or 'trade',17,0.13934426229508196,

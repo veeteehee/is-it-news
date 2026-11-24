@@ -1,0 +1,13 @@
+data/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+results_v3_matched.csv
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.synctex.gz

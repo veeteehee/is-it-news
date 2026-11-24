@@ -1,0 +1,15 @@
+article_id,matched_ticker,classification,note
+666,ADANIENT,clear,about IndiGo and SpiceJet; matched via the Adani-run airport
+1200,ETERNAL,clear,about HDB Financial; matched as an IPO comparable
+2020,NTPC,borderline,clean energy IPOs in general; NTPC likely a comparable
+851,ADANIPORTS,borderline,Adani Group bonds; not Adani Ports equity
+288,INFY,borderline,market wrap; Infosys one name among many
+100,ASIANPAINT,legitimate,sector headline; company belongs to the sector named
+828,SUNPHARMA,legitimate,sector headline; company belongs to the sector named
+1542,HINDALCO,legitimate,sector headline; company belongs to the sector named
+667,BEL,legitimate,sector headline; company belongs to the sector named
+950,APOLLOHOSP,legitimate,sector headline; company belongs to the sector named
+933,RELIANCE,legitimate,concerns the company directly
+221,NTPC,legitimate,concerns the company directly
+2647,BEL,legitimate,names the company in the title as an abbreviation (BEL) the matcher does not cover
+2096,BHARTIARTL,legitimate,names the company in the title as an abbreviation (Airtel) the matcher does not cover

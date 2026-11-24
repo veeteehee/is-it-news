@@ -1,0 +1,322 @@
+\documentclass[11pt,a4paper]{article}
+
+% Typography & Layout
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpazo}          % Palatino serif for body & math (classic finance journal look)
+\usepackage[scaled=0.92]{helvet}
+\usepackage{microtype}         % Subtle kerning & protrusion
+\usepackage[a4paper, top=1in, bottom=1in, left=1.05in, right=1.05in]{geometry}
+\usepackage{setspace}
+\setstretch{1.22}
+
+% Tables, Math & Lists
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{caption}
+\captionsetup{
+  labelfont=bf,
+  font=small,
+  skip=6pt,
+  justification=centering
+}
+\usepackage{enumitem}
+\setlist[itemize]{itemsep=3pt, topsep=4pt, leftmargin=1.4em}
+\setlist[enumerate]{itemsep=3pt, topsep=4pt, leftmargin=1.6em}
+
+% Section Styling
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\sffamily}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries\sffamily}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{14pt}{5pt}
+\titlespacing*{\subsection}{0pt}{10pt}{3pt}
+
+% Headers & Footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\textit{Financial News That Restates the Return}}
+\fancyhead[R]{\footnotesize\textit{S.\ V.\ Ghandikota}}
+\fancyfoot[C]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\footnotesize\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% Links & URLs
+\usepackage{xurl}
+\usepackage[colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!60!black]{hyperref}
+
+% Auto-generated numbers and tables (from make_paper_inputs.py)
+\input{generated/numbers.tex}
+\newcommand{\repourl}{\url{https://github.com/veeteehee/is-it-news}}
+
+\begin{document}
+\thispagestyle{plain}
+
+% ---- Title Block ------------------------------------------------------------
+\begin{center}
+  {\LARGE\bfseries Financial News That Restates the Return:\\[4pt]
+  \Large Measuring Price-Move Contamination in an Indian News Corpus\par}
+  \vspace{12pt}
+  {\large Sree Vidya Ghandikota\par}
+  \vspace{2pt}
+  {\small Independent researcher, Hyderabad, India\par}
+  \vspace{4pt}
+  {\small November 2026\par}
+\end{center}
+\vspace{6pt}
+
+% ---- Abstract ---------------------------------------------------------------
+\begin{center}
+\begin{minipage}{0.92\linewidth}
+\hrule height 0.6pt
+\vspace{8pt}
+\noindent\textbf{\sffamily\small Abstract}\par\vspace{4pt}
+\small
+Studies that relate news tone to stock returns assume the text carries information about the price. Much financial news instead reports the price move itself. This note measures how often a public corpus of \nArticles{} Indian financial news articles restates the subject stock's same-day return, how accurately, and how much of the same-day association between headline tone and returns that restatement accounts for.
+
+\vspace{4pt}
+How much contamination appears depends sharply on extraction precision: a loose extractor flags \flagLoose{} of articles but its stated moves are uncorrelated with actual returns (\corrLoose{}), whereas a filtered extractor (\texttt{v3}) flags \flagVthree{} and correlates \corrVthree{} with the actual close-to-close return on single-company NIFTY~50 matches. A direction-word tone score computed from the headline has a same-day $R^2$ of \toneRsqVthree{} among headlines that state a percentage move, against \toneRsqNoPct{} among headlines that contain a price-direction word but no percentage. Hand-labelling all \nLabelled{} headlines in that second group shows that \shareLabMove{} still describe the company's own price move, so among headlines that carry price-direction vocabulary the contamination survives a filter that removes numbers. The claim does not extend to number-free headlines in general: a FinBERT classifier, which agrees in sign with the word count on \fbAgree{} of the headlines both score, also scores \fbOnlyN{} headlines that the word count scores zero, and in those its tone is unrelated to the same-day return. The sample cannot detect a next-day relationship between tone and returns. The contamination therefore inflates contemporaneous associations; this note does not show that it creates spurious forecasting power.
+\vspace{8pt}
+\hrule height 0.6pt
+\end{minipage}
+\end{center}
+\vspace{10pt}
+
+% =============================================================================
+\section{Question}
+
+A common design in text-based finance relates the tone of news to stock returns. In the Indian market, headline-level signals have been extracted from business news and tested against NSE~500 returns (Sinha, Kedas, Kumar and Malo, 2019), and aggregate news sentiment has been related to NIFTY returns (Chari, Desai, Borde and George, 2023). Annotated headline corpora (Sinha, Kedas, Kumar and Malo, 2022) and large news-and-price datasets (Dong, Fan and Peng, 2024) support this line of work. These designs treat each news item as information arriving at the market. When the return is measured on the same day as the news, the design is exposed to a simple problem: an article written after the price has moved may report the move. A headline such as ``ITC shares fall marginally in today's session'' has a negative tone because the share price fell. Regressing the return on that tone recovers the reporting, not information that moved the price.
+
+This note measures the size of that problem in one public corpus. It asks three questions:
+\begin{enumerate}
+  \item What share of the corpus restates the subject stock's own contemporaneous price move?
+  \item How accurately does the text reproduce the return it restates?
+  \item How much of the same-day association between headline tone and returns comes from headlines that report the move, and does that association disappear once headlines quoting a number are removed?
+\end{enumerate}
+
+The note is descriptive. It quantifies contamination in one corpus; it does not re-examine any published result, and it finds no evidence about next-day predictability either way.
+
+% =============================================================================
+\section{Data}
+
+\paragraph{News.} The corpus is the Indian Stock Market News Dataset (Chakraborty, Barman and Sufian, 2025), version v1, published on Zenodo under a CC~BY~4.0 licence. It contains \nArticles{} articles dated \dateFirst{} to \dateLast{}, on \nDates{} distinct dates. All URLs (\shareMoneycontrol{}) are on \texttt{moneycontrol.com}. Each article has a title, a publication date, a description, an author field, the body text, keywords and a URL. The date has no time of day. The version label v1 is taken from the record page, because the version field in the record's metadata is empty. The articles are used as published in the dataset; ticker matching, extracted price moves and tone scores are derived by the author.
+
+Two bylines are frequent: ``Alpha Desk'' (\nAlphaDesk{} articles, \shareAlphaDesk{}) and ``Broker Research'' (\nBrokerResearch{}, \shareBrokerResearch{}). The remaining \nOtherAuthors{} articles (\shareOtherAuthors{}) carry other bylines.
+
+\paragraph{Prices.} Daily prices for the \nTickers{} companies in the current NIFTY~50 are taken from Yahoo Finance. The return used throughout is the raw close-to-close return on the article's date, because headlines state raw moves (``shares fall 2\%''), not market-adjusted ones. Two series need a note. Tata Motors prices are taken under the post-demerger symbol \texttt{TMPV.NS}, which carries the pre-demerger history; the commercial-vehicle demerger took effect on 1~October~2025, outside the February--August~2025 sample window, and the series is not adjusted for it, which does not affect any return in the window. Kotak Mahindra Bank split its shares 1:5 with a record date of 14~January~2026, also after the window; its price history is split-adjusted throughout, so returns are unaffected.
+
+\paragraph{Matching articles to companies.} An article is assigned to a company when its title and keywords together name exactly one NIFTY~50 company, using a list of name fragments (for example ``hdfc bank'', ``larsen'', ``l\&t''). \nSingleName{} articles (\shareSingleName{}) name exactly one company. Of these, \nMatched{} fall on a trading day with a valid same-day return; this is the matched sample. Name matching is imperfect: some articles are assigned to a company they are not about (Section~\ref{sec:limits}).
+
+% =============================================================================
+\section{Method}
+
+\subsection{Extracting stated price moves}
+
+The extractor looks for a percentage within 25 characters of a direction word in the same sentence (``rises'', ``falls'' and similar) in the title and in the first six sentences of the body. It is applied at three levels of strictness:
+\begin{itemize}
+  \item \textbf{Loose:} any percentage near a direction word, excluding sentences with forecast language (targets, upside, recommendations), which are classed as forecasts rather than realised moves.
+  \item \textbf{Strict:} as loose, and the sentence must refer to shares or stock, must not report a company fundamental (revenue, profit, margin, orders and similar), and must not give a range (``up to 3\%'').
+  \item \textbf{v3:} as strict, and the sentence must not mention a corporate action (bonus, split, buyback and similar) or name more than one company from a list of NIFTY~50 and other frequently mentioned companies.
+\end{itemize}
+All three levels are reported. The contrast between them is a result in its own right: how much of a corpus appears to restate returns depends heavily on how precisely the restatement is identified.
+
+The extracted move is validated against the actual return on the \emph{validation sample}: articles that name exactly one NIFTY~50 company, carry a realised (not forecast) move, and fall on a trading day with a valid return. Accuracy is measured by the correlation between stated and actual moves, the share with the same sign, and the absolute error in percentage points.
+
+\subsection{Headline tone}
+
+Tone is computed from the headline text alone. It counts whole words denoting price direction: rise words (``surge'', ``jump'', ``rally'', ``rise'', ``gain'', ``higher'', ``up'' and their inflections, plus ``gainers'') against fall words (``fall'', ``drop'', ``decline'', ``slip'', ``lower'', ``down'' and their inflections, plus ``losers''). The full list of \nWordForms{} word forms is in Appendix~\ref{app:words}. Tone is $+1$ if rise words outnumber fall words, $-1$ if fall words outnumber rise words, and~0 otherwise; headlines with tone~0 are dropped. The phrase ``up to'' is a range marker, not a direction, and is removed before counting. No output of the extractor enters the tone variable.
+
+The extractor is used only to split the matched sample by what the headline says about the price, into three mutually exclusive groups:
+\begin{itemize}
+  \item the headline states a move that the \texttt{v3} extractor accepts;
+  \item the headline contains a percentage that \texttt{v3} rejects (ranges, forecasts, results figures, multi-company headlines);
+  \item the headline contains no percentage at all.
+\end{itemize}
+Only the last group speaks to whether removing numeric mentions removes contamination.
+
+\paragraph{FinBERT check.} The word-count tone is the primary measure. As a robustness check, every headline in the matched sample (\fbNScored{}) is also scored with a FinBERT model fine-tuned on SEntFiN~1.0 headlines (Sinha, Kedas, Kumar and Malo, 2022): \texttt{\fbModel{}} on Hugging Face, revision \texttt{\fbRev{}}. The model was fine-tuned on headlines from 2002--2017, so its training data does not overlap the 2025 sample. Its reported F1 of 0.873 is self-reported by the third party who published the model, not by the SEntFiN authors. The mapping to tone was fixed before any result was examined: the primary FinBERT tone is the sign of the most probable class (positive $+1$, negative $-1$, neutral~0), like-for-like with the word count; a secondary, continuous measure is $P(\text{positive}) - P(\text{negative})$.
+
+\subsection{Regressions}
+
+For each group, the same-day return in percent is regressed on tone,
+\begin{equation}
+  r_{i,t} = \alpha + \beta\,\mathrm{tone}_{i} + \varepsilon_{i},
+\end{equation}
+where $r_{i,t}$ is the close-to-close return of the matched company on the article's date. The same regression is run with the next trading day's return. Several articles can share a date, so standard errors are clustered by date, and $p$-values use a $t$ distribution with one fewer degree of freedom than the number of clusters.
+
+\subsection{Hand-labelling the headlines without a percentage}
+
+A same-day association in headlines without a number has two possible sources. The headline may describe the price move in words (``ITC stock among top gainers on Nifty~50''), or it may report news that could have moved the price (``Maruti Suzuki seeks govt support as small car sales slide''). Without publication times these cannot be separated statistically, so every headline in the no-percentage group with non-zero word-count tone---that is, every number-free headline in which rise words outnumber fall words or the reverse (\nLabelled{} headlines, the whole group, not a sample)---was labelled by hand by the author. Number-free headlines with zero word-count tone (no counted direction word, or equal numbers of rise and fall words) are outside this group and were not labelled.
+
+The labelling file contained only an article identifier and the headline, in random order: no returns, tone, dates or tickers. The operational test was: \emph{could a reader infer the direction of the subject company's share price move from the headline alone?} ``Yes'' is labelled \emph{describes the price move}, ``no'' \emph{describes an event}, and ``cannot tell'' \emph{ambiguous}. A sector headline (``Pharma stocks slump'', matched to Sun Pharma) counts as ``yes'' when the subject company belongs to the sector named.
+
+The test was refined during labelling. The initial instruction asked what the direction word refers to; the two versions disagree when a headline conveys the price direction through words the tone measure does not count. Two sets of changes were made, both before any return was examined. In a first-pass consistency review, 11 of the \nLabelled{} labels were changed. When the submitted labels were checked against the final test, 2 more were changed to apply it consistently. The labels were then fixed and recorded before the analysis in Section~\ref{sec:labels} was run. That analysis was specified before labelling began: the share of each label, and the tone--return regressions separately for the two main labels.
+
+% =============================================================================
+\section{Results}
+
+\subsection{How much of the corpus restates the return, and how accurately}
+
+\begin{table}[t]
+\centering
+\caption{Extracted price moves against actual same-day returns}
+\label{tab:extractor}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+Extractor & Flagged & Matched & Corr. & Same sign & Median error & Within 1 pp \\
+ & (\% corpus) & ($n$) & & & (pp) & \\
+\midrule
+\input{generated/tab_extractor.tex}
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+
+\parbox{0.94\linewidth}{\footnotesize \emph{Notes.} Flagged: share of all \nArticles{} articles in which the extractor finds a realised price move in the title or the first six body sentences. Matched: the validation sample (exactly one NIFTY~50 company named, realised move, trading day with a valid return). Correlation, sign agreement and errors compare the stated move with the actual close-to-close return on the article date.}
+\end{table}
+
+Table~\ref{tab:extractor} reports the three extractors. The loose extractor flags \flagLoose{} of the corpus, but on its validation sample the stated moves are uncorrelated with actual returns (\corrLoose{}). Its filters admit percentages attached to revenue, ranges and moves in other stocks, which the stricter levels exclude. Tightening the filters lowers the flagged share to \flagStrict{} and raises the correlation to \corrStrict{}. Excluding corporate actions and sentences that name several companies (\texttt{v3}) changes the flagged share very little (\flagVthree{}, \nFlagVthree{} articles) but raises the correlation to \corrVthree{}.
+
+On the \texttt{v3} validation sample (\matchedVthree{} articles), the stated move has the same sign as the actual return in \signVthree{} of cases. The median absolute error is \errVthree{} percentage points; \withinHalfVthree{} of stated moves are within half a percentage point of the actual close-to-close return and \withinOneVthree{} within one point. This note does not test where the remaining errors come from. In this corpus, then, \flagVthree{} of articles state a realised price move, and where the subject stock can be identified, the stated move closely tracks its actual return.
+
+\subsection{Headline tone and same-day returns}
+
+\begin{table}[t]
+\centering
+\caption{Same-day and next-day return on headline tone}
+\label{tab:tone}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrrrrr}
+\toprule
+ & & & \multicolumn{3}{c}{Same-day return} & \multicolumn{2}{c}{Next-day return} \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-8}
+Headline group & $n$ & Clusters & $R^2$ & Tone coef. ($t$) & Same sign & Tone coef. ($t$) & $p$ \\
+\midrule
+\input{generated/tab_tone.tex}
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+
+\parbox{0.96\linewidth}{\footnotesize \emph{Notes.} Return in percent regressed on headline tone ($+1$/$-1$). Matched sample, headlines with non-zero tone. The last three rows partition the first. Standard errors clustered by date; $p$ from a $t$ distribution with $(\text{clusters} - 1)$ degrees of freedom. Same sign: share of headlines whose tone has the sign of the same-day return.}
+\end{table}
+
+Table~\ref{tab:tone} reports the regressions. Across all \toneNAll{} matched headlines with non-zero tone, the same-day $R^2$ is \toneRsqAll{}. The association is concentrated where the headline states the move: among headlines with a \texttt{v3}-accepted move, $R^2$ is \toneRsqVthree{} and tone has the sign of the return in \toneSignVthree{} of cases. In these headlines the association is mechanical: the direction word is the reported move.
+
+Among headlines that contain no percentage but do contain a price-direction word, $R^2$ falls to \toneRsqNoPct{}, but the coefficient remains clearly positive (\toneCoefNoPct{}, $t=\toneTNoPct{}$). Among headlines with a percentage that \texttt{v3} rejects, $R^2$ is \toneRsqPctRej{}. Dropping ``gainers'' and ``losers'' from the word list leaves these figures almost unchanged ($R^2$ of \toneRsqNoGainVthree{}, \toneRsqNoGainPctRej{} and \toneRsqNoGainNoPct{} for the three groups).
+
+Removing the range marker ``up to'' before counting changed the tone of \nUpToChanged{} headlines. Before the change, a headline such as ``shares fall up to 3\%'' counted one rise and one fall word and was dropped; the \nUpToRecovered{} headlines of this kind restored by the change all have the sign of the same-day return.
+
+\paragraph{Next-day returns.} Tone is not significantly related to the next day's return at the 5\% level in any group. For the full sample the next-day $t$-statistic is \toneNextTAll{} ($p=\toneNextPAll{}$). This estimate is specification-sensitive: across the three specifications used during this study (counting ``up to'' as a rise word, removing it, and adding Kotak Mahindra Bank and Tata Motors to the price data), the full-sample $t$-statistic ranges from \nextTAllMin{} to \nextTAllMax{} and $p$ from \nextPAllMin{} to \nextPAllMax{}. The tests have low power, particularly in the no-percentage group (\toneNNoPct{} headlines, \toneClNoPct{} date clusters), so the sample cannot detect a next-day effect. What the data do show is that the clear effect of contamination is on same-day associations.
+
+\subsection{Number-free headlines with price-direction words}
+\label{sec:labels}
+
+\begin{table}[t]
+\centering
+\caption{Headlines without a percentage but with non-zero tone, by hand label}
+\label{tab:labels}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrrrrr}
+\toprule
+ & & & & \multicolumn{3}{c}{Same-day return} & Next-day \\
+\cmidrule(lr){5-7}
+Label & $n$ & Share & Clusters & $R^2$ & Tone coef. ($t$) & Same sign & Tone coef. ($t$) \\
+\midrule
+\input{generated/tab_labels.tex}
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+
+\parbox{0.96\linewidth}{\footnotesize \emph{Notes.} All \nLabelled{} headlines in the no-percentage group of Table~\ref{tab:tone}, labelled by the author before returns were examined. \nLabAmbig{} headline (\shareLabAmbig{}) labelled ambiguous is not shown. Specification as in Table~\ref{tab:tone}.}
+\end{table}
+
+Table~\ref{tab:labels} reports the hand-labelling. Of the \nLabelled{} headlines without a percentage but with non-zero tone, \nLabMove{} (\shareLabMove{}) describe the subject company's own price move, \nLabEvent{} (\shareLabEvent{}) describe an event, and \nLabAmbig{} (\shareLabAmbig{}) is ambiguous. Most headlines that pass a ``no numbers'' filter but still contain a price-direction word are therefore price reports, typically of the form ``Hindustan Unilever shares fall marginally in today's session'' or ``Larsen \& Toubro among top gainers on Nifty~50''.
+
+Among the headlines that describe the price move, the same-day $R^2$ is \labRsqMove{} ($t=\labTMove{}$) and tone has the sign of the return in \labSignMove{} of cases. Among the \labNEvent{} event headlines, $R^2$ is \labRsqEvent{}, the $t$-statistic is \labTEvent{} ($p=\labPEvent{}$), and tone has the sign of the return in \labSignEvent{} of cases. The event group is too small to estimate its relationship precisely, and its point estimate of the slope is close to that of the price-move group, so the difference in $R^2$ between the two groups is not evidence of a different relationship, and these figures do not show that event headlines carry no same-day information. What the labelling does establish is composition: \shareLabMove{} of the number-free headlines that contain a price-direction word are still reports of the price move.
+
+Sign agreement in the price-move group is \labSignMove{}, not close to 100\%, and this note leaves the gap unexplained. One candidate cause was checked and did not account for it. A headline written during the session (``in early trade'') describes a partial-session move, which need not match the close-to-close return. Using a list of session qualifiers fixed before counting (``early trade'', ``morning'', ``intraday'', ``afternoon'', ``in today's session'', ``day's low'', ``day's high''), \nSessQual{} of the \labNMove{} price-move headlines (\shareSessQual{}) carry one. Their sign agreement is \signSessQual{}, against \signSessNoQual{} for the \nSessNoQual{} headlines without one, a small difference for groups of this size. The list does not cover every session phrase: \nSessOther{} further headlines contain ``session'' or ``trade'' without a listed qualifier. Other candidate causes remain untested: tone mis-scored when the counted word refers to something else (Section~\ref{sec:limits}), articles assigned to the wrong company, and articles dated differently from the trading day they describe.
+
+Neither group shows a next-day relationship significant at the 5\% level. The event group's next-day $t$-statistic of \labNextTEvent{} ($p=\labNextPEvent{}$) rests on \labNEvent{} headlines in \labClEvent{} date clusters, too few for clustered standard errors to be reliable, and is not interpreted.
+
+\subsection{Robustness: a trained sentiment classifier}
+\label{sec:finbert}
+
+\begin{table}[t]
+\centering
+\caption{Same-day $R^2$ under the word-count and FinBERT tone measures}
+\label{tab:finbert}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{Word count} & \multicolumn{3}{c}{FinBERT} & \multicolumn{3}{c}{Both non-zero} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Headline group & $n$ & Cl. & $R^2$ & $n$ & Cl. & $R^2$ & $n$ & $R^2$ word & $R^2$ FinBERT \\
+\midrule
+\input{generated/tab_finbert.tex}
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+
+\parbox{0.98\linewidth}{\footnotesize \emph{Notes.} Same-day return regressed on tone as in Table~\ref{tab:tone}. Word count: the primary measure (Table~\ref{tab:tone}), on headlines with non-zero word-count tone. FinBERT: sign of the most probable class, on headlines FinBERT does not score neutral. Both non-zero: headlines where neither measure is zero, with each measure in turn. Cl.: number of date clusters. Standard errors clustered by date.}
+\end{table}
+
+Table~\ref{tab:finbert} sets the Table~\ref{tab:tone} regressions under the two tone measures side by side. On the \fbNInt{} headlines where both measures are non-zero, they agree in sign on \fbNAgree{} (\fbAgree{}). For headlines that state a \texttt{v3} move, $R^2$ is \toneRsqVthree{} with the word count and \fbRsqVthree{} with FinBERT; for headlines with a percentage that \texttt{v3} rejects, \toneRsqPctRej{} and \fbRsqPctRej{}.
+
+The two measures diverge in the no-percentage group: $R^2$ is \toneRsqNoPct{} with the word count and \fbRsqNoPct{} with FinBERT. The difference comes from the samples, not from the measures disagreeing. FinBERT assigns a non-neutral class to many headlines that the word count scores zero, so its no-percentage group has \fbNNoPct{} headlines against \toneNNoPct{}. Restricted to the \intNNoPct{} no-percentage headlines where both measures are non-zero, the two give $R^2$ of \intRsqWcNoPct{} (word count) and \intRsqFbNoPct{} (FinBERT).
+
+The samples differ by the \fbOnlyN{} headlines that FinBERT scores and the word count does not (\fbOnlyNoPctN{} of them without a percentage). In these, FinBERT tone is unrelated to the same-day return: $R^2$ is \fbOnlyRsq{} ($t=\fbOnlyT{}$, $p=\fbOnlyP{}$), and tone has the sign of the return in \fbOnlySign{} of cases, no better than a coin flip. These headlines were not hand-labelled, because the labelling covered only headlines with non-zero word-count tone, so this note cannot say what they are about. What the comparison shows is that, among number-free headlines, the same-day association is found in those with non-zero word-count tone and not in the additional headlines that only FinBERT scores.
+
+On the hand-labelled headlines FinBERT gives the same result as the word count: $R^2$ is \fbLabRsqMove{} among the \fbLabNMove{} price-move headlines. It scores \fbLabNEventNeutral{} of the \labNEvent{} event headlines neutral; in the remaining \fbLabNEvent{}, $t=\fbLabTEvent{}$ ($p=\fbLabPEvent{}$), again too few to estimate the relationship precisely. The continuous measure, $P(\text{positive})-P(\text{negative})$, changes no conclusion: on all matched headlines its same-day $R^2$ is \fbContRsqVthree{} for headlines that state a \texttt{v3} move and \fbContRsqNoPct{} across all \fbContNNoPct{} no-percentage headlines. Under FinBERT, as under the word count, tone is not related to the next day's return at the 5\% level in any group (full sample $t=\fbNextTAll{}$, $p=\fbNextPAll{}$; lowest $p$ in any group \fbMinNextP{}).
+
+% =============================================================================
+\section{Limitations}
+\label{sec:limits}
+
+\begin{itemize}
+  \item \textbf{One source, one period.} All articles are from one website, over six and a half months and \nDates{} dates. The shares reported here describe this corpus, not Indian financial news in general.
+  \item \textbf{No publication times.} The corpus records dates only, so articles published before and after the close cannot be separated. This is why the no-percentage headlines were labelled by hand rather than split by time.
+  \item \textbf{Tone is a word count.} The primary tone measure counts direction words; it does not read context, and a reviewer may object that a list of direction words is built to find direction. A trained classifier, FinBERT fine-tuned on SEntFiN~1.0 headlines, was applied as a check (Section~\ref{sec:finbert}). It agrees in sign with the word count on \fbAgree{} of the headlines both measures score, and gives nearly the same regression results on them. This is not independent evidence: the two measures appear to respond to the same direction words, so their agreement shows that the results do not depend on the particular word list, not that they would hold for a measure that ignores price language. Word counting also fails when the counted word refers to something else. In ``Paints, tyre stocks see selling pressure as crude oil spikes amid Middle East tension'', matched to Asian Paints, the only counted word is ``spikes'', which refers to crude oil: the measure scores the headline positive, while the direction it implies for Asian Paints is negative. Errors of this kind can go either way.
+  \item \textbf{Name matching.} Articles are assigned to a company by name fragments in the title and keywords. Among the \nLabelled{} hand-labelled headlines, \nKeywordOnly{} were matched through the keywords alone, and the author reviewed all of them. \nMisClear{} (\shareMisClear{} of \nLabelled{}) are clearly assigned to a company they are not about: ``IndiGo, SpiceJet shares sharply drop after Air India flight crashes near Ahmedabad airport'' is assigned to Adani Enterprises, and a headline about HDB Financial's listing to Eternal. On a strict reading that also counts headlines about a theme, the market or the company's group rather than the company itself (clean-energy IPOs in general, Adani Group bonds, a market wrap), the count rises to \nMisUpper{} (\shareMisUpper{}). Being matched through keywords alone is not a clean proxy for misattribution, because the name list misses common abbreviations: two such headlines name the company in the title as ``BEL'' and ``Airtel''. For the same reason, the matcher misses articles that refer to a company only by an abbreviation.
+  \item \textbf{Remaining extraction errors.} The largest remaining errors of the \texttt{v3} extractor are sector headlines that pass the multi-company filter, such as ``Defence shares fall for 4th day amid profit booking'' assigned to Bharat Electronics.
+  \item \textbf{Single labeller.} All labels were assigned by the author, and the operational test was refined during labelling (11 first-pass and 2 definitional changes, all before returns were examined). No second labeller was used, so inter-rater agreement is not measured.
+  \item \textbf{Membership and coverage.} Current NIFTY~50 membership is used, so the matched sample is affected by survivorship. Because no portfolios are formed, this matters little here.
+  \item \textbf{Power.} The next-day tests have low power, most of all in the no-percentage group and in the event headlines; non-significance there is uninformative.
+\end{itemize}
+
+% =============================================================================
+\section{Conclusion}
+
+In this corpus \flagVthree{} of articles state a realised price move, and where the subject stock can be identified the stated move correlates \corrVthree{} with its actual return. Headline tone has a same-day $R^2$ of \toneRsqVthree{} where the headline quotes the move. Among headlines that carry price-direction vocabulary, the association does not disappear when headlines with numbers are removed: \shareLabMove{} of the number-free headlines with a price-direction word still describe the price move. For such headlines a ``no numbers'' filter is not enough to separate news that moves prices from news that reports them. This is not a finding about number-free headlines in general: among the headlines a trained classifier scores but the word count does not, tone is unrelated to the same-day return. A FinBERT classifier reproduces the word-count results on the headlines both measures score. For same-day designs on corpora like this one, the reported move has to be identified and removed directly, for example by labelling, or the timing of publication has to be known. The sample cannot detect a next-day relationship, so these results bear on contemporaneous associations; they do not show that contamination creates spurious forecasting power.
+
+\paragraph{Data and code.} Code that regenerates every number in this note, and downloads the data from its original sources, is available at \repourl{}. The repository does not redistribute the news text.
+
+% =============================================================================
+\section*{References}
+
+\begin{list}{}{\leftmargin=1.5em \itemindent=-1.5em \itemsep=4pt}
+\item Chakraborty, S., Barman, D., \& Sufian, A. (2025). Indian Stock Market News Dataset (v1) [Data set]. Zenodo. \url{https://doi.org/10.5281/zenodo.16991843}. Licence: CC BY 4.0, \url{https://creativecommons.org/licenses/by/4.0/}.
+\item Chari, S., Desai, P.\ H., Borde, N., \& George, B. (2023). Aggregate news sentiment and stock market returns in India. \emph{Journal of Risk and Financial Management}, 16(8), 376. \url{https://doi.org/10.3390/jrfm16080376}.
+\item Dong, Z., Fan, X., \& Peng, Z. (2024). FNSPID: A comprehensive financial news dataset in time series. arXiv:2402.06698. \url{https://arxiv.org/abs/2402.06698}.
+\item Sinha, A., Kedas, S., Kumar, R., \& Malo, P. (2019). Buy, sell or hold: Entity-aware classification of business news. IIM Ahmedabad Working Paper WP 2019-04-02.
+\item Sinha, A., Kedas, S., Kumar, R., \& Malo, P. (2022). SEntFiN 1.0: Entity-aware sentiment analysis for financial news. \emph{Journal of the Association for Information Science and Technology}, 73(9), 1314--1335. \url{https://doi.org/10.1002/asi.24634}.
+\end{list}
+
+% =============================================================================
+\appendix
+\section{Direction words}
+\label{app:words}
+
+The tone measure counts these word forms as whole words, case-insensitively. The list is generated from the patterns in the code.
+
+\medskip
+\input{generated/appendix_words.tex}
+
+\end{document}

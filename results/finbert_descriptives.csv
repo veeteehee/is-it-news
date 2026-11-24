@@ -1,0 +1,9 @@
+quantity,count,share
+headlines scored,1218,1.0
+FinBERT class positive,583,0.47865353037766833
+FinBERT class negative,357,0.29310344827586204
+FinBERT class neutral,278,0.22824302134646962
+FinBERT tone 0 (neutral),278,0.22824302134646962
+word-count tone 0,561,0.4605911330049261
+both non-zero (intersection),651,0.5344827586206896
+sign agreement on intersection,646,0.9923195084485407

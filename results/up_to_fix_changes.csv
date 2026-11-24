@@ -1,0 +1,19 @@
+article_id,Title,row,tone_before,tone_after,same_day_ret_pct,sign_agrees_after
+49,"BPCL, Indigo Paints, Apollo Tyres, other crude-sensitive stocks fall up to 2% as oil prices climb",pct_rejected,1,0,-0.48528699152762256,
+103,State Bank of India to raise up to $3 billion this year via public offer or debt issuance,no_pct,1,0,-1.1760975579795607,
+287,"Asian Paints, HPCL, Apollo Tyres, other crude-sensitive stocks fall up to 1.5% as Brent rises above $71 per barrel",pct_rejected,1,0,-1.541483038221636,
+344,"SBI board approves raising up to Rs 20,000 crore via bonds in FY26",no_pct,1,0,1.8678424608967958,
+750,"Nifty Bank extends losses to 3rd straight day, declines up to 1.6% on Axis Bank's Q4 results; Kotak, SBI fall up to 2%",pct_rejected,0,-1,-3.3799956576097023,1.0
+756,"Bharat Dynamics, GRSE, HAL, other defence stocks decline up to 3%: Here are the likely triggers",pct_rejected,0,-1,-0.9936535273870839,1.0
+804,"HPCL, BPCL, IOC shares gain up to 2% as Brent crude drops below $74 per barrel",pct_rejected,1,0,2.0993257339291915,
+903,"Defence stocks extend losses to third day on profit-booking; GRSE, Cochin Shipyard, BDL fall up to 4%",pct_rejected,0,-1,-0.48863915456837104,1.0
+1101,"Metal, realty stocks tumble up to 3% as US Fed's hawkish stance weighs in",pct_rejected,0,-1,-0.7297354584824167,1.0
+1162,"GRSE, BEML, other defence shares rise up to 3% as investors buy the dip after slump in 7 out of 8 sessions",pct_rejected,1,0,3.274118554152916,
+1221,"TVS Motors, M&M, Ashok Leyland, Eicher Motors shares rev up to 4% on healthy auto sales",pct_rejected,1,0,2.786157140923895,
+1338,Eicher Motors shares drop up to 3% amid buzz of zero tariff on Harley-Davidson bikes,pct_rejected,0,-1,-0.7607192254495132,1.0
+1634,IndusInd Bank shares fall 3% as Goldman Sachs cuts rating to 'sell' and sees up to 15% downside,pct_rejected,0,-1,-2.4399899633233635,1.0
+1728,"Vedanta, Tata Steel, other metal stocks crash up to 9% as Trump tariffs stoke demand fears",pct_rejected,0,-1,-8.612157367565787,1.0
+2288,"Natco Pharma, Cipla, other pharma shares rise up to 4% as US to set targets to lower drugs prices, generics could be exempted",pct_rejected,1,0,1.925192486934968,
+2668,"Tata Motors, ancillary shares fall up to 2% as Trump's tariff on car imports kick in",pct_rejected,0,-1,-2.6715302209855962,1.0
+2871,"Cochin Shipyard shares rise 5%; ITC Hotels, PB Fintech drop up to 1.3% ahead of Q4 results today",v3_move,1,0,0.8273101240908298,
+2892,"Defence stocks snap 2-day rally to fall more than 2% on Israel-Iran ceasefire; BEML, GRSE decline up to 7%",v3_move,0,-1,-0.570205258086709,1.0
